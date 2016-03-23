@@ -2,6 +2,8 @@ package fr.quentinklein.slt;
 
 import android.Manifest;
 import android.content.Context;
+import android.location.GpsSatellite;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -11,13 +13,15 @@ import android.support.annotation.NonNull;
 import android.support.annotation.RequiresPermission;
 import android.util.Log;
 
+import java.util.Iterator;
+
 /**
  * @author Quentin Klein <klein.quentin@gmail.com>, Yasir.Ali <ali.yasir0@gmail.com>
  *         <p>
  *         Helper that tracks user location
  *         </p>
  */
-public abstract class LocationTracker implements LocationListener {
+public abstract class LocationTracker implements LocationListener, GpsStatus.Listener {
 
     /**
      * Tag used for logs
@@ -129,6 +133,8 @@ public abstract class LocationTracker implements LocationListener {
                     onProviderError(new ProviderError(LocationManager.PASSIVE_PROVIDER, "Provider is not enabled"));
                 }
             }
+
+            mLocationManagerService.addGpsStatusListener(this);
             mIsListening = true;
 
             // If user has set a timeout
@@ -166,6 +172,7 @@ public abstract class LocationTracker implements LocationListener {
     public final void stopListening() {
         if (mIsListening) {
             Log.i(TAG, "LocationTracked has stopped listening for location updates");
+            mLocationManagerService.removeGpsStatusListener(this);
             mLocationManagerService.removeUpdates(this);
             mIsListening = false;
         } else {
@@ -205,11 +212,35 @@ public abstract class LocationTracker implements LocationListener {
     }
 
     /**
+     * Called when the tracker GPS status has changed
+     *
+     * @see android.location.GpsStatus.Listener#onGpsStatusChanged (android.location.GpsStatus.Listener)
+     */
+    @Override
+    public void onGpsStatusChanged(int event) {
+        GpsStatus gpsStatus = mLocationManagerService.getGpsStatus(null);
+        if(gpsStatus != null) {
+            Iterable<GpsSatellite> satellites = gpsStatus.getSatellites();
+            Iterator<GpsSatellite> sat = satellites.iterator();
+            while (sat.hasNext()) {
+                onSatelliteFound(sat.next());
+            }
+        }
+    }
+
+    /**
      * Called when the tracker had found a location
      *
      * @param location the found location
      */
     public abstract void onLocationFound(@NonNull Location location);
+
+    /**
+     * Called when the tracker had found a satellite
+     *
+     * @param satellite the found satellite
+     */
+    public abstract void onSatelliteFound(@NonNull GpsSatellite satellite);
 
     /**
      * Called when the tracker had not found any location and the timeout just happened
