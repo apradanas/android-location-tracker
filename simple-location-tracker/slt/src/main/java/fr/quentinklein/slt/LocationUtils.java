@@ -68,7 +68,7 @@ public class LocationUtils {
      */
     @UiThread
     public static void askEnableProviders(@NonNull final Context context, @StringRes int messageResource) {
-        askEnableProviders(context, messageResource, R.string.provider_settings_yes, R.string.provider_settings_yes);
+        askEnableProviders(context, messageResource, R.string.provider_settings_yes, R.string.provider_settings_no);
     }
 
     /**
